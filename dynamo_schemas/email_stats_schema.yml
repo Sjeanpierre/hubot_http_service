@@ -1,0 +1,60 @@
+---
+:table_name: email_stats
+:attribute_definitions:
+- :attribute_name: message_id
+  :attribute_type: S
+- :attribute_name: recipient
+  :attribute_type: S
+- :attribute_name: disposition
+  :attribute_type: S
+- :attribute_name: account
+  :attribute_type: S
+- :attribute_name: date
+  :attribute_type: N
+:key_schema:
+- :attribute_name: message_id
+  :key_type: HASH
+- :attribute_name: date
+  :key_type: RANGE
+:global_secondary_indexes:
+- :index_name: recipient
+  :key_schema:
+  - :attribute_name: recipient
+    :key_type: HASH
+  :projection:
+    :projection_type: ALL
+  :provisioned_throughput:
+    :read_capacity_units: 1
+    :write_capacity_units: 1
+- :index_name: disposition
+  :key_schema:
+  - :attribute_name: disposition
+    :key_type: HASH
+  :projection:
+    :projection_type: ALL
+  :provisioned_throughput:
+    :read_capacity_units: 1
+    :write_capacity_units: 1
+- :index_name: account
+  :key_schema:
+  - :attribute_name: account
+    :key_type: HASH
+  :projection:
+    :projection_type: ALL
+  :provisioned_throughput:
+    :read_capacity_units: 1
+    :write_capacity_units: 1
+- :index_name: date
+  :key_schema:
+  - :attribute_name: message_id
+    :key_type: HASH
+  - :attribute_name: date
+    :key_type: RANGE
+  :projection:
+    :projection_type: ALL
+  :provisioned_throughput:
+    :read_capacity_units: 1
+    :write_capacity_units: 1
+:provisioned_throughput:
+  :read_capacity_units: 1
+  :write_capacity_units: 1

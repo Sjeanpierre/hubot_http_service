@@ -1,0 +1,43 @@
+---
+:table_name: servers
+:attribute_definitions:
+- :attribute_name: uid
+  :attribute_type: S
+- :attribute_name: private_ip
+  :attribute_type: S
+- :attribute_name: public_ip
+  :attribute_type: S
+:key_schema:
+- :attribute_name: uid
+  :key_type: HASH
+:global_secondary_indexes:
+- :index_name: private_ip
+  :key_schema:
+  - :attribute_name: private_ip
+    :key_type: HASH
+  :projection:
+    :projection_type: ALL
+  :provisioned_throughput:
+    :read_capacity_units: 1
+    :write_capacity_units: 1
+- :index_name: uid
+  :key_schema:
+  - :attribute_name: uid
+    :key_type: HASH
+  :projection:
+    :projection_type: ALL
+  :provisioned_throughput:
+    :read_capacity_units: 1
+    :write_capacity_units: 1
+- :index_name: public_ip
+  :key_schema:
+  - :attribute_name: public_ip
+    :key_type: HASH
+  :projection:
+    :projection_type: ALL
+  :provisioned_throughput:
+    :read_capacity_units: 1
+    :write_capacity_units: 1
+:provisioned_throughput:
+  :read_capacity_units: 1
+  :write_capacity_units: 1
