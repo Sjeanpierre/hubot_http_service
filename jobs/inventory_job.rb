@@ -4,12 +4,10 @@ require 'aws-sdk'
 require 'yaml'
 
 # noinspection RubyArgCount
-$dynamodb = Aws::DynamoDB::Client.new(
-    region: 'us-east-1'
-)
+$dynamodb = Aws::DynamoDB::Client.new(region: 'us-east-1')
 
 def main
-  credential_file = YAML.load_file('credentials.yml')
+  credential_file = YAML.load_file('../config/rightscale.yml')
   rightscale_credentials = credential_file[:rightscale]
   setup_dynamo
   rs_email = rightscale_credentials[:email]
