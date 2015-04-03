@@ -1,4 +1,4 @@
-FROM sjeanpierre/sinatra-base
+FROM sjeanpierre/centos66-ruby21
 RUN mkdir -p /usr/src/app/config
 RUN mkdir -p /root/.aws
 COPY config/rightscale.yml /usr/src/app/config/
