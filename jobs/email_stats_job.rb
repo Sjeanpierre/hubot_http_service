@@ -42,7 +42,7 @@ class MessageProcessor
     collect_sqs_messages
     parse_messages
     dispatch_messages
-    $threads.push(Thread.new { persist_messages(@messages) })
+    $threads.push(Thread.new { persist_processed_messages(@messages) })
     $threads.push(Thread.new {clean_processed_messages(@receipt_handles, @queue_url)})
     return @messages
   end
