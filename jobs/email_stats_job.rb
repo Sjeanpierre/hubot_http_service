@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 #http://docs.aws.amazon.com/ses/latest/DeveloperGuide/notification-contents.html#bounce-types
 #http://docs.aws.amazon.com/sdkforruby/api/Aws/SQS/Client.html
 
