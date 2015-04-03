@@ -15,11 +15,21 @@ GEM
     eventmachine (1.0.7)
     jmespath (1.0.2)
       multi_json (~> 1.0)
+    json (1.8.2)
+    mime-types (1.25.1)
     multi_json (1.11.0)
     multi_xml (0.5.5)
+    netrc (0.10.3)
     rack (1.6.0)
     rack-protection (1.5.3)
       rack
+    rest-client (1.7.3)
+      mime-types (>= 1.16, < 3.0)
+      netrc (~> 0.7)
+    right_api_client (1.5.26)
+      json (~> 1.0)
+      mime-types (~> 1.0)
+      rest-client (~> 1.6)
     sinatra (1.4.5)
       rack (~> 1.4)
       rack-protection (~> 1.4)
@@ -35,5 +45,6 @@ PLATFORMS
 
 DEPENDENCIES
   aws-sdk
+  right_api_client (~> 1.5.26)
   sinatra
   thin
