@@ -180,7 +180,6 @@ class MessageProcessor
   end
 end
 
-
 def main(queue_urls)
   setup_dynamo
   queue_urls.each do |queue_url|
@@ -188,7 +187,6 @@ def main(queue_urls)
     messages.each { |message| write_to_dynamo('email_stats', message) }
   end
 end
-
 
 def setup_dynamo
   options = YAML.load_file(File.join(File.dirname(__FILE__), '..', 'dynamo_schemas', 'email_stats_schema.yml'))

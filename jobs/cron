@@ -1,3 +1,0 @@
-*/15 * * * * cd /usr/src/app/jobs/ && ./email_stats_job.rb >/var/log/hubot_cron.log
-*/15 * * * * cd /usr/src/app/jobs/ && ./inventory_job.rb >/var/log/hubot_cron.log
-
