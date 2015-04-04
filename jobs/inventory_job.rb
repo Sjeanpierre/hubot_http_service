@@ -16,6 +16,7 @@ log("Starting inventory job at #{start_time}")
 $dynamodb = Aws::DynamoDB::Client.new(region: 'us-east-1')
 
 def main
+  pull_all_current
   credential_file = YAML.load_file(File.join(File.dirname(__FILE__), '..', 'config', 'rightscale.yml'))
   rightscale_credentials = credential_file[:rightscale]
   setup_dynamo
@@ -27,6 +28,21 @@ def main
     rs_client = RightApi::Client.new(:email => rs_email, :password => rs_password, :account_id => rs_account,:timeout => nil)
     inventory(rs_client)
   end
+end
+
+def pull_all_current
+  $current_server_ids = []
+  options = {
+      :table_name => 'servers',
+      :index_name => 'uid',
+      :attributes_to_get => ['uid'],
+      :select => 'SPECIFIC_ATTRIBUTES',
+  }
+  dynamo_results = $dynamodb.scan(options)
+  dynamo_results.items.each do |server|
+    $current_server_ids.push(server['uid'])
+  end
+  p
 end
 
 def inventory(rs_client)
@@ -44,6 +60,7 @@ def inventory(rs_client)
   all_instances = all_instances.flatten
   dyn_table = 'servers'
   Thread.new {persist_data(all_instances,rs_client.account_id)} unless all_instances.empty?
+  log("Attempting to write #{all_instances.count} to dynamo for #{rs_client.account_id}")
   all_instances.each do |instance|
     write_to_dynamo(dyn_table, instance) unless instance == nil
   end
@@ -68,6 +85,10 @@ rescue => error
 end
 
 def write_to_dynamo(table, instance)
+  if $current_server_ids.include?(instance[:uid])
+    log("Skipping server #{instance[:uid]}, already exists in dynamo")
+    return
+  end
   options = {
       :table_name => table,
       :item => {
