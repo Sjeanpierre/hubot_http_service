@@ -7,10 +7,17 @@ require 'json'
 require 'time'
 require 'yaml'
 
+def log(message)
+  puts message
+  $stdout.flush
+end
+
 $threads = []
+start_time = Time.now
+log("Starting email stats job at #{start_time}")
 # noinspection RubyArgCount
 $dynamodb = Aws::DynamoDB::Client.new(region: 'us-east-1')
-email_stats_config = YAML.load_file('../config/email_stats.yml')
+email_stats_config = YAML.load_file(File.join(File.dirname(__FILE__), '..', 'config', 'email_stats.yml'))
 queue_urls = email_stats_config[:queue_urls]
 
 # noinspection RubyArgCount
@@ -42,20 +49,20 @@ class MessageProcessor
     collect_sqs_messages
     parse_messages
     dispatch_messages
-    $threads.push(Thread.new { persist_processed_messages(@messages) })
-    $threads.push(Thread.new {clean_processed_messages(@receipt_handles, @queue_url)})
+    $threads.push(Thread.new { persist_processed_messages(@messages) }) unless @messages.empty?
+    $threads.push(Thread.new {clean_processed_messages(@receipt_handles, @queue_url)}) unless @messages.empty?
     return @messages
   end
 
   private
   def collect_sqs_messages
-    puts "Grabbing messages from #{@queue_url}"
+    log "Grabbing messages from #{@queue_url}"
     region = queue_region
     sqs = Aws::SQS::Client.new(:region => region)
     loop do
       received = sqs.receive_message(:queue_url => @queue_url, :max_number_of_messages => 10)
       received_messages = received.messages #todo, we should be collecting the receipt handles to delete the @messages
-      puts "Retrieved #{received_messages.count} messages"
+      log "Retrieved #{received_messages.count} messages"
       break if received_messages.count == 0
       @messages.push(received_messages)
     end
@@ -63,7 +70,7 @@ class MessageProcessor
   end
 
   def clean_processed_messages(receipt_ids, queue_url)
-    puts 'Cleaning up processed messages'
+    log 'Cleaning up processed messages'
     region = queue_region
     sqs = Aws::SQS::Client.new(:region => region)
     receipt_ids.each_slice(10) do |ten_receipts|
@@ -71,10 +78,10 @@ class MessageProcessor
       begin
         sqs.delete_message_batch(:queue_url => queue_url, :entries => batch)
       rescue => error
-        puts "Ran into error attempting to remove batch #{batch}"
-        puts "#{error.message}"
-        puts '='*80
-        puts error.backtrace.join("\n")
+        log "Ran into error attempting to remove batch #{batch}"
+        log "#{error.message}"
+        log '='*80
+        log error.backtrace.join("\n")
       end
     end
 
@@ -82,9 +89,9 @@ class MessageProcessor
 
   def persist_processed_messages(messages)
     jsonable_messages = messages.map { |message| message.to_h }
-    file_name = "messages-#{Time.now.strftime('%Y-%m-%d-%H%M%S')}"
-    File.open("../persisted_data/#{file_name}.json", 'w') { |f| f.write jsonable_messages.to_json }
-    puts "persisted messages to #{file_name}"
+    file_name = File.join(File.dirname(__FILE__), '..', 'persisted_data', "messages-#{Time.now.strftime('%Y-%m-%d-%H%M%S')}")
+    File.open("#{file_name}.json", 'w') { |f| f.write jsonable_messages.to_json }
+    log "persisted messages to #{file_name}"
   end
 
   def create_receipt_batch(receipt_group)
@@ -114,7 +121,7 @@ class MessageProcessor
       when 'ses-bounced-email'
         process_bounced_messages
       else
-        puts "Unknown queue type: #{queue_type}"
+        log "Unknown queue type: #{queue_type}"
         exit(-1)
     end
   end
@@ -184,31 +191,35 @@ end
 
 
 def setup_dynamo
-  options = YAML.load_file('../dynamo_schemas/email_stats_schema.yml')
+  options = YAML.load_file(File.join(File.dirname(__FILE__), '..', 'dynamo_schemas', 'email_stats_schema.yml'))
   table_list = $dynamodb.list_tables
   begin
     $dynamodb.create_table(options)
     $dynamodb.wait_until(:table_exists, :table_name => options[:table_name])
   end unless table_list.table_names.include?(options[:table_name])
 rescue => error
-  puts 'Encountered an error setting up Dynamo'
-  puts "#{error.message}"
+  log 'Encountered an error setting up Dynamo'
+  log "#{error.message}"
   exit(1)
 end
 
 def write_to_dynamo(table, message)
-  puts "Writing #{message.message_id} to dynamo"
+  log "Writing #{message.message_id} to dynamo"
   options = {
       :table_name => table,
       :item => message.format
   }
   $dynamodb.put_item(options)
 rescue => e
-  puts 'Encountered an error'
-  puts "#{e.message}"
+  log 'Encountered an error'
+  log "#{e.message}"
 end
 
 
 main(queue_urls)
 $threads.each {|thread| thread.join}
+end_time = Time.now
+log("Completed email stats job at #{end_time}, duration #{end_time - start_time} seconds")
+log('='*80)
+
 

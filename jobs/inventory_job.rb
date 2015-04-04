@@ -5,18 +5,26 @@ require 'right_api_client'
 require 'aws-sdk'
 require 'yaml'
 
+def log(message)
+  puts message
+  $stdout.flush
+end
+
+start_time = Time.now
+log("Starting inventory job at #{start_time}")
 # noinspection RubyArgCount
 $dynamodb = Aws::DynamoDB::Client.new(region: 'us-east-1')
 
 def main
-  credential_file = YAML.load_file('../config/rightscale.yml')
+  credential_file = YAML.load_file(File.join(File.dirname(__FILE__), '..', 'config', 'rightscale.yml'))
   rightscale_credentials = credential_file[:rightscale]
   setup_dynamo
   rs_email = rightscale_credentials[:email]
   rs_password = rightscale_credentials[:password]
   rs_accounts = rightscale_credentials[:account_id]
   rs_accounts.each do |rs_account|
-    rs_client = RightApi::Client.new(:email => rs_email, :password => rs_password, :account_id => rs_account)
+    log "connecting to RS account #{rs_account}"
+    rs_client = RightApi::Client.new(:email => rs_email, :password => rs_password, :account_id => rs_account,:timeout => nil)
     inventory(rs_client)
   end
 end
@@ -26,32 +34,36 @@ def inventory(rs_client)
   clouds = rs_client.clouds.index
   all_instances = []
   regions.each do |region|
+    log "Locating instances in region #{region}"
     selected_cloud = clouds.detect { |cloud| cloud.name.split(' ').last == region }.show
     instances = selected_cloud.instances(:view => 'full', :filter => ['state==operational']).index
+    log "Found #{instances.count} instances"
     formatted_instances = ServerInstance.new(rs_client.account_id, instances).process unless instances.empty?
     all_instances.push(formatted_instances)
   end
   all_instances = all_instances.flatten
   dyn_table = 'servers'
+  Thread.new {persist_data(all_instances,rs_client.account_id)} unless all_instances.empty?
   all_instances.each do |instance|
     write_to_dynamo(dyn_table, instance) unless instance == nil
   end
 end
 
-def persist_data(instance_array)
-  file_name = "servers-#{Time.now.strftime('%Y-%m-%d-%H%M%S')}"
-  File.open("../persisted_data/#{file_name}.json", 'w') { |f| f.write instance_array.to_json }
-  puts "persisted servers to #{file_name}"
+def persist_data(instance_array,account)
+  file_name = "servers-#{account}-#{Time.now.strftime('%Y-%m-%d-%H%M%S')}"
+  file = File.join(File.dirname(__FILE__), '..', 'persisted_data', "#{file_name}.json")
+  File.open(file, 'w') { |f| f.write instance_array.to_json }
+  log "persisted servers to #{file_name}"
 end
 
 def setup_dynamo
-  options = YAML.load_file('../dynamo_schemas/inventory_schema.yml')
+  options = YAML.load_file(File.join(File.dirname(__FILE__), '..', 'dynamo_schemas', 'inventory_schema.yml'))
   table_list = $dynamodb.list_tables
   $dynamodb.create_table(options) unless table_list.table_names.include?(options[:table_name])
   $dynamodb.wait_until(:table_exists, :table_name => options[:table_name])
 rescue => error
-  puts 'Encountered an error setting up Dynamo'
-  puts "#{error.message}"
+  log 'Encountered an error setting up Dynamo'
+  log "#{error.message}"
   exit(1)
 end
 
@@ -67,10 +79,11 @@ def write_to_dynamo(table, instance)
           :account_id => instance[:account_id]
       }
   }
+  log("Writing server #{instance[:uid]} to dynamo")
   $dynamodb.put_item(options)
 rescue => e
-  puts 'Encountered an error'
-  puts "#{e.message}"
+  log 'Encountered an error'
+  log "#{e.message}"
 end
 
 class ServerInstance
@@ -107,6 +120,11 @@ class ServerInstance
   end
 end
 
+
 main
+end_time = Time.now
+log("Completed inventory job at #{end_time}, duration #{end_time - start_time} seconds")
+log('='*80)
+
 
 
