@@ -44,9 +44,9 @@ class EmailStats
   end
 
   def date
+    long_year = '%m/%d/%Y %H:%M:%S'
+    short_year = '%m/%d/%y %H:%M:%S'
     if @data.has_key?('date')
-      long_year = '%m/%d/%Y %H:%M:%S'
-      short_year = '%m/%d/%y %H:%M:%S'
       date_parse_format = (@data['date'].split('/').last.length == 4) ? long_year : short_year
       start_of_range = DateTime.strptime("#{@data['date'].to_s} 00:00:01", date_parse_format).to_time.to_i
       end_of_range = DateTime.strptime("#{@data['date']} 23:59:59", date_parse_format).to_time.to_i
