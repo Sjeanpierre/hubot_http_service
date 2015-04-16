@@ -153,7 +153,9 @@ class MessageProcessor
     end
 
   end
-
+  #there is a defect here with the complanit_details being in singular form
+  #the entries for complaints are already affected and will need to be converted if fix is attempted
+  #todo
   def process_complaint_messages
     @messages.map! do |message|
       m = message['Message']
