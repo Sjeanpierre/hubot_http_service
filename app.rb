@@ -1,6 +1,7 @@
 require 'sinatra'
 require_relative 'lib/inventory'
 require_relative 'lib/email_stats'
+require_relative 'lib/s3'
 set :show_exceptions, false
 set :raise_errors, true
 JOBS = ['email_stats_job.rb', 'inventory_job.rb']
@@ -32,6 +33,18 @@ end
 
 post '/email_stats' do
   http_status, data = EmailStats.new(params).process
+  status http_status
+  data
+end
+
+post '/copy_file' do
+  http_status, data = S3.new(params).copy_file
+  status http_status
+  data
+end
+
+post '/file_exists' do
+  http_status, data = S3.new(params).file_exists
   status http_status
   data
 end
