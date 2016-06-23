@@ -37,13 +37,13 @@ post '/email_stats' do
   data
 end
 
-post '/copy_file' do
+post '/s3/copy_file' do
   http_status, data = S3.new(params).copy_file
   status http_status
   data
 end
 
-post '/file_exists' do
+post '/s3/file_exists' do
   http_status, data = S3.new(params).file_exists
   status http_status
   data
