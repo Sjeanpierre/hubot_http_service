@@ -29,9 +29,9 @@ class S3
 
   def file_exists
     if check_file(@source_bucket, @file_name)
-      [200,{ message: "#{file} exists." }.to_json]
+      [200,{ message: "#{@file_name} exists." }.to_json]
     else
-      [404,{ message: "#{file} not found." }.to_json]
+      [404,{ message: "#{@file_name} not found." }.to_json]
     end
   end
 
