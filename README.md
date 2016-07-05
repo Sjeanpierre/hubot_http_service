@@ -5,3 +5,5 @@ This service allows [my Hubot scripts](https://github.com/Sjeanpierre/hubot_scri
 
 #### Functions
 * [Inventory](https://github.com/Sjeanpierre/hubot_http_service/wiki/Inventory)
+* [Email Stats](https://github.com/Sjeanpierre/hubot_http_service/wiki/Email-Stats)
+* [S3 Functions](https://github.com/Sjeanpierre/hubot_http_service/wiki/S3-Functions)
